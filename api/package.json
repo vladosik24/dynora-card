@@ -2,6 +2,7 @@
   "name": "dynora-card",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@vercel/og": "^0.6.2",
     "react": "^18.2.0"
