@@ -1,5 +1,9 @@
 // api/profile-card.js
-// Деплой: Vercel Edge Function. Малює PNG-картку профілю за query-параметрами.
+// Деплой: Vercel Serverless Function (Node.js runtime).
+// ПРИМІТКА: @vercel/og під Edge-рантаймом у не-Next.js проєкті видав помилку
+// "references unsupported modules" (не міг статично перевірити внутрішні
+// модулі satori/yoga-wasm). Тому працюємо на звичайному Node.js runtime —
+// там повний доступ до модулів, обмежень немає.
 // Написано без JSX (React.createElement напряму) — щоб збірка не залежала
 // від наявності JSX-транспілятора в проєкті.
 //
@@ -8,8 +12,6 @@
 
 import { ImageResponse } from '@vercel/og';
 import React from 'react';
-
-export const config = { runtime: 'edge' };
 
 const e = React.createElement;
 
