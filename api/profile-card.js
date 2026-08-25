@@ -1,11 +1,17 @@
 // api/profile-card.js
 // Деплой: Vercel Edge Function. Малює PNG-картку профілю за query-параметрами.
+// Написано без JSX (React.createElement напряму) — щоб збірка не залежала
+// від наявності JSX-транспілятора в проєкті.
+//
 // URL приклад:
-// https://ТВІЙ-ДОМЕН.vercel.app/api/profile-card?nick=Tim&level=37&balance=125480000&bitcoins=4250&rank=128&clan=Elite&premium=1&cars=Bugatti,Yacht,Penthouse
+// /api/profile-card?nick=Tim&level=37&balance=125480000&bitcoins=4250&rank=128&clan=Elite&premium=1&cars=Bugatti,Yacht,Penthouse
 
 import { ImageResponse } from '@vercel/og';
+import React from 'react';
 
 export const config = { runtime: 'edge' };
+
+const e = React.createElement;
 
 export default function handler(req) {
   const { searchParams } = new URL(req.url);
@@ -14,7 +20,7 @@ export default function handler(req) {
   const level = searchParams.get('level') || '1';
   const balance = searchParams.get('balance') || '0';
   const bitcoins = searchParams.get('bitcoins') || '0';
-  const rank = searchParams.get('rank') || '—';
+  const rank = searchParams.get('rank') || '0';
   const clan = searchParams.get('clan') || 'немає';
   const premium = searchParams.get('premium') === '1';
   const carsRaw = searchParams.get('cars') || '';
@@ -28,70 +34,51 @@ export default function handler(req) {
   const pink = '#FF69B4';
   const bg = '#121218';
 
-  return new ImageResponse(
-    (
-      <div
-        style={{
-          width: '800px',
-          height: '1000px',
-          display: 'flex',
-          flexDirection: 'column',
-          backgroundColor: bg,
-          border: '4px solid ' + (premium ? gold : '#5A5A6E'),
-          padding: '50px',
-          fontFamily: 'sans-serif',
-        }}
-      >
-        <div style={{ display: 'flex', color: gold, fontSize: 36, fontWeight: 700 }}>
-          ★ DYNORA GAME ★
-        </div>
-        <div style={{ display: 'flex', color: grey, fontSize: 22, marginBottom: 30 }}>
-          ПРОФІЛЬ ГРАВЦЯ
-        </div>
+  const statLine = (text, color) =>
+    e('div', { style: { display: 'flex', color: color, fontSize: 28, marginBottom: 14 } }, text);
 
-        <div style={{ display: 'flex', color: white, fontSize: 32, marginBottom: 14 }}>
-          👤 {nick}
-        </div>
-        <div style={{ display: 'flex', color: green, fontSize: 28, marginBottom: 14 }}>
-          ⭐ Рівень: {level}
-        </div>
-        <div style={{ display: 'flex', color: gold, fontSize: 28, marginBottom: 14 }}>
-          💰 Баланс: {balance} $
-        </div>
-        <div style={{ display: 'flex', color: cyan, fontSize: 28, marginBottom: 14 }}>
-          ₿ Біткоїни: {bitcoins}
-        </div>
-        <div style={{ display: 'flex', color: pink, fontSize: 28, marginBottom: 14 }}>
-          🏆 Місце в топі: #{rank}
-        </div>
-        <div style={{ display: 'flex', color: white, fontSize: 24, marginBottom: 30 }}>
-          🛡 Клан: {clan}
-        </div>
+  const carLines = cars.length === 0
+    ? [e('div', { style: { display: 'flex', color: grey, fontSize: 22 } }, 'поки що немає майна')]
+    : cars.map((carName, i) =>
+        e('div', { key: i, style: { display: 'flex', color: '#C8C8C8', fontSize: 22, marginBottom: 10 } }, '🏎️ ' + carName.trim())
+      );
 
-        <div style={{ display: 'flex', width: '700px', height: '2px', backgroundColor: '#46465A', marginBottom: 20 }} />
+  const children = [
+    e('div', { style: { display: 'flex', color: gold, fontSize: 36, fontWeight: 700 } }, '★ DYNORA GAME ★'),
+    e('div', { style: { display: 'flex', color: grey, fontSize: 22, marginBottom: 30 } }, 'ПРОФІЛЬ ГРАВЦЯ'),
+    statLine('👤 ' + nick, white),
+    statLine('⭐ Рівень: ' + level, green),
+    statLine('💰 Баланс: ' + balance + ' $', gold),
+    statLine('₿ Біткоїни: ' + bitcoins, cyan),
+    statLine('🏆 Місце в топі: #' + rank, pink),
+    e('div', { style: { display: 'flex', color: white, fontSize: 24, marginBottom: 30 } }, '🛡 Клан: ' + clan),
+    e('div', { style: { display: 'flex', width: '700px', height: '2px', backgroundColor: '#46465A', marginBottom: 20 } }),
+    e('div', { style: { display: 'flex', color: white, fontSize: 26, marginBottom: 16 } }, '🏠 МАЙНО:'),
+    e('div', { style: { display: 'flex', flexDirection: 'column' } }, ...carLines),
+  ];
 
-        <div style={{ display: 'flex', color: white, fontSize: 26, marginBottom: 16 }}>
-          🏠 МАЙНО:
-        </div>
-        <div style={{ display: 'flex', flexDirection: 'column' }}>
-          {cars.length === 0 ? (
-            <div style={{ display: 'flex', color: grey, fontSize: 22 }}>поки що немає майна</div>
-          ) : (
-            cars.map((carName, i) => (
-              <div key={i} style={{ display: 'flex', color: '#C8C8C8', fontSize: 22, marginBottom: 10 }}>
-                🏎️ {carName.trim()}
-              </div>
-            ))
-          )}
-        </div>
+  if (premium) {
+    children.push(
+      e('div', { style: { display: 'flex', color: gold, fontSize: 30, marginTop: 'auto', justifyContent: 'center' } }, '👑 PREMIUM')
+    );
+  }
 
-        {premium && (
-          <div style={{ display: 'flex', color: gold, fontSize: 30, marginTop: 'auto', justifyContent: 'center' }}>
-            👑 PREMIUM
-          </div>
-        )}
-      </div>
-    ),
-    { width: 800, height: 1000 }
+  const root = e(
+    'div',
+    {
+      style: {
+        width: '800px',
+        height: '1000px',
+        display: 'flex',
+        flexDirection: 'column',
+        backgroundColor: bg,
+        border: '4px solid ' + (premium ? gold : '#5A5A6E'),
+        padding: '50px',
+        fontFamily: 'sans-serif',
+      },
+    },
+    ...children
   );
+
+  return new ImageResponse(root, { width: 800, height: 1000 });
 }
